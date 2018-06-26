@@ -12,7 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
-
+	"github.com/vmihailenco/msgpack"
+	
 	"github.com/kniren/gota/series"
 )
 
@@ -1098,6 +1099,17 @@ func ReadJSON(r io.Reader, options ...LoadOption) DataFrame {
 	return LoadMaps(m, options...)
 }
 
+// ReadJSON reads a JSON array from a io.Reader and builds a DataFrame with the
+// resulting records.
+func ReadJSON(r io.Reader, options ...LoadOption) DataFrame {
+        var m []map[string]interface{}
+        err := json.NewDecoder(r).Decode(&m)
+        if err != nil {
+                return DataFrame{Err: err}
+        }
+        return LoadMaps(m, options...)
+}
+
 // WriteOption is the type used to configure the writing of elements
 type WriteOption func(*writeOptions)
 
@@ -1143,6 +1155,15 @@ func (df DataFrame) WriteJSON(w io.Writer) error {
 		return df.Err
 	}
 	return json.NewEncoder(w).Encode(df.Maps())
+}
+
+// WriteMSGpack writes the DataFrame to the given io.Writer as a mesgpack array.
+func (df DataFrame) WriteMSGpack(w io.Writer) error {
+	if df.Err != nil {
+		return df.Err
+	}
+	err := msgpack.NewEncoder(w).Encode(df.Maps())
+	return err
 }
 
 // Getters/Setters for DataFrame fields
